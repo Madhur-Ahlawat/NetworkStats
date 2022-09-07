@@ -1,17 +1,13 @@
-package pl.rzagorski.networkstatsmanager.utils;
+package com.demo.networkstatsmanager.utils;
 
 import android.content.Context;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.util.Log;
 
-import pl.rzagorski.networkstatsmanager.view.StatsActivity;
+import com.demo.networkstatsmanager.view.StatsActivity;
 
-/**
- * Created by Robert Zagórski on 2016-09-09.
- */
 public class PackageManagerHelper {
-
 
     public static boolean isPackage(Context context, CharSequence s) {
         PackageManager packageManager = context.getPackageManager();

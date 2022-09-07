@@ -1,8 +1,4 @@
-package pl.rzagorski.networkstatsmanager.model;
-
-/**
- * Created by Robert Zagórski on 2016-12-14.
- */
+package com.demo.networkstatsmanager.model;
 
 public class Package {
     private String name;

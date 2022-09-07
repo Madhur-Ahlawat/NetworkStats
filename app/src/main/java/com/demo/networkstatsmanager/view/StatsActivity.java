@@ -1,4 +1,4 @@
-package pl.rzagorski.networkstatsmanager.view;
+package com.demo.networkstatsmanager.view;
 
 import android.Manifest;
 import android.annotation.TargetApi;
@@ -6,36 +6,33 @@ import android.app.AppOpsManager;
 import android.app.usage.NetworkStatsManager;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.ApplicationInfo;
+import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
+import android.net.TrafficStats;
 import android.os.Build;
 import android.os.Bundle;
 import android.provider.Settings;
-import android.support.v4.app.ActivityCompat;
-import android.support.v7.app.AppCompatActivity;
-import android.support.v7.widget.AppCompatImageView;
-import android.support.v7.widget.Toolbar;
-import android.view.MenuItem;
+import android.widget.ImageView;
 import android.widget.TextView;
 
-import pl.rzagorski.networkstatsmanager.R;
-import pl.rzagorski.networkstatsmanager.utils.NetworkStatsHelper;
-import pl.rzagorski.networkstatsmanager.utils.PackageManagerHelper;
-import pl.rzagorski.networkstatsmanager.utils.TrafficStatsHelper;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
+
+import com.bumptech.glide.Glide;
+import com.demo.networkstatsmanager.R;
+import com.demo.networkstatsmanager.model.Package;
+import com.demo.networkstatsmanager.utils.NetworkStatsHelper;
+import com.demo.networkstatsmanager.utils.PackageManagerHelper;
 
 public class StatsActivity extends AppCompatActivity {
     private static final int READ_PHONE_STATE_REQUEST = 37;
-    public static final String EXTRA_PACKAGE = "ExtraPackage";
 
-    AppCompatImageView ivIcon;
-    Toolbar toolbar;
+    ImageView ivIcon;
 
-    TextView trafficStatsAllRx;
-    TextView trafficStatsAllTx;
     TextView trafficStatsPackageRx;
     TextView trafficStatsPackageTx;
 
-    TextView networkStatsAllRx;
-    TextView networkStatsAllTx;
     TextView networkStatsPackageRx;
     TextView networkStatsPackageTx;
 
@@ -43,10 +40,7 @@ public class StatsActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_stats);
-        toolbar = (Toolbar) findViewById(R.id.toolbar);
-        setSupportActionBar(toolbar);
-        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
-        ivIcon = (AppCompatImageView) findViewById(R.id.avatar);
+        ivIcon = findViewById(R.id.avatar);
     }
 
     @Override
@@ -62,39 +56,19 @@ public class StatsActivity extends AppCompatActivity {
         if (!hasPermissions()) {
             return;
         }
+        Glide.with(this).load("https://en.wikipedia.org/wiki/McLaren_F1#/media/File:1996_McLaren_F1_Chassis_No_63_6.1_Front.jpg").into(ivIcon);
+
         initTextViews();
-        checkIntent();
+        intiData();
     }
 
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        if (item.getItemId() == android.R.id.home) {
-            finish();
-            return true;
-        }
-        return super.onOptionsItemSelected(item);
-    }
-
-    private void checkIntent() {
-        Intent intent = getIntent();
-        if (intent == null) {
-            return;
-        }
-        Bundle extras = intent.getExtras();
-        if (extras == null) {
-            return;
-        }
-        String packageName = extras.getString(EXTRA_PACKAGE);
+    private void intiData() {
+        String packageName = getPackageData().getPackageName();
         if (packageName == null) {
             return;
         }
         try {
             ivIcon.setImageDrawable(getPackageManager().getApplicationIcon(packageName));
-            toolbar.setTitle(getPackageManager().getApplicationLabel(
-                    getPackageManager().getApplicationInfo(
-                            packageName, PackageManager.GET_META_DATA)));
-            toolbar.setSubtitle(packageName + ":" + PackageManagerHelper.getPackageUid(this, packageName));
-            setSupportActionBar(toolbar);
         } catch (PackageManager.NameNotFoundException e) {
             e.printStackTrace();
         }
@@ -118,12 +92,8 @@ public class StatsActivity extends AppCompatActivity {
     }
 
     private void initTextViews() {
-        trafficStatsAllRx = (TextView) findViewById(R.id.traffic_stats_all_rx_value);
-        trafficStatsAllTx = (TextView) findViewById(R.id.traffic_stats_all_tx_value);
         trafficStatsPackageRx = (TextView) findViewById(R.id.traffic_stats_package_rx_value);
         trafficStatsPackageTx = (TextView) findViewById(R.id.traffic_stats_package_tx_value);
-        networkStatsAllRx = (TextView) findViewById(R.id.network_stats_all_rx_value);
-        networkStatsAllTx = (TextView) findViewById(R.id.network_stats_all_tx_value);
         networkStatsPackageRx = (TextView) findViewById(R.id.network_stats_package_rx_value);
         networkStatsPackageTx = (TextView) findViewById(R.id.network_stats_package_tx_value);
     }
@@ -133,45 +103,49 @@ public class StatsActivity extends AppCompatActivity {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             NetworkStatsManager networkStatsManager = (NetworkStatsManager) getApplicationContext().getSystemService(Context.NETWORK_STATS_SERVICE);
             NetworkStatsHelper networkStatsHelper = new NetworkStatsHelper(networkStatsManager, uid);
-            fillNetworkStatsAll(networkStatsHelper);
             fillNetworkStatsPackage(uid, networkStatsHelper);
         }
-        fillTrafficStatsAll();
         fillTrafficStatsPackage(uid);
     }
 
     @TargetApi(Build.VERSION_CODES.M)
-    private void fillNetworkStatsAll(NetworkStatsHelper networkStatsHelper) {
-        long mobileWifiRx = networkStatsHelper.getAllRxBytesMobile(this) + networkStatsHelper.getAllRxBytesWifi();
-        networkStatsAllRx.setText(mobileWifiRx + " B");
-        long mobileWifiTx = networkStatsHelper.getAllTxBytesMobile(this) + networkStatsHelper.getAllTxBytesWifi();
-        networkStatsAllTx.setText(mobileWifiTx + " B");
-    }
-
-    @TargetApi(Build.VERSION_CODES.M)
     private void fillNetworkStatsPackage(int uid, NetworkStatsHelper networkStatsHelper) {
-        long mobileWifiRx = networkStatsHelper.getPackageRxBytesMobile(this) + networkStatsHelper.getPackageRxBytesWifi();
-        networkStatsPackageRx.setText(mobileWifiRx + " B");
-        long mobileWifiTx = networkStatsHelper.getPackageTxBytesMobile(this) + networkStatsHelper.getPackageTxBytesWifi();
-        networkStatsPackageTx.setText(mobileWifiTx + " B");
-    }
 
-    private void fillTrafficStatsAll() {
-        trafficStatsAllRx.setText(TrafficStatsHelper.getAllRxBytes() + " B");
-        trafficStatsAllTx.setText(TrafficStatsHelper.getAllTxBytes() + " B");
+        long recievedRxKiloBytes = (networkStatsHelper.getPackageRxBytesMobile(uid, this) + networkStatsHelper.getPackageRxBytesWifi()) / 1024;
+        long sentRxKiloBytes = (networkStatsHelper.getPackageTxBytesMobile(this) + networkStatsHelper.getPackageTxBytesWifi()) / 1024;
+
+        if (recievedRxKiloBytes > 1) {
+            networkStatsPackageRx.setText(recievedRxKiloBytes + " KBs recieved");
+        } else {
+            networkStatsPackageRx.setText(recievedRxKiloBytes + " KB recieved");
+        }
+
+        if (sentRxKiloBytes > 1) {
+            networkStatsPackageTx.setText(sentRxKiloBytes + " KBs sent");
+        } else {
+            networkStatsPackageTx.setText(sentRxKiloBytes + " KB sent");
+        }
     }
 
     private void fillTrafficStatsPackage(int uid) {
-        trafficStatsPackageRx.setText(TrafficStatsHelper.getPackageRxBytes(uid) + " B");
-        trafficStatsPackageTx.setText(TrafficStatsHelper.getPackageTxBytes(uid) + " B");
+        long recievedTxKiloBytes = TrafficStats.getUidRxBytes(uid) / 1024;
+        long sentTxKiloBytes = TrafficStats.getUidTxBytes(uid) / 1024;
+
+        if (recievedTxKiloBytes > 1) {
+            trafficStatsPackageRx.setText(recievedTxKiloBytes + " KBs recieved");
+        } else {
+            trafficStatsPackageRx.setText(recievedTxKiloBytes + " KB recieved");
+        }
+
+        if (sentTxKiloBytes > 1) {
+            trafficStatsPackageTx.setText(sentTxKiloBytes + " KBs sent");
+        } else {
+            trafficStatsPackageTx.setText(sentTxKiloBytes + " KB sent");
+        }
     }
 
     private boolean hasPermissionToReadPhoneStats() {
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.READ_PHONE_STATE) == PackageManager.PERMISSION_DENIED) {
-            return false;
-        } else {
-            return true;
-        }
+        return ActivityCompat.checkSelfPermission(this, Manifest.permission.READ_PHONE_STATE) != PackageManager.PERMISSION_DENIED;
     }
 
     private void requestPhoneStateStats() {
@@ -212,9 +186,35 @@ public class StatsActivity extends AppCompatActivity {
         return false;
     }
 
-    @TargetApi(Build.VERSION_CODES.LOLLIPOP)
     private void requestReadNetworkHistoryAccess() {
-        Intent intent = new Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS);
-        startActivity(intent);
+        Intent intent;
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP) {
+            intent = new Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS);
+            startActivity(intent);
+        }
+    }
+
+    private Package getPackageData() {
+        PackageManager packageManager = getPackageManager();
+        try {
+            ApplicationInfo mApplicationInfo;
+            PackageInfo packageInfo = getPackageManager().getPackageInfo(getPackageName(), 0);
+            Package packageItem = new Package();
+            packageItem.setVersion(packageInfo.versionName);
+            packageItem.setPackageName(packageInfo.packageName);
+            mApplicationInfo = packageManager.getApplicationInfo(packageInfo.packageName, PackageManager.GET_META_DATA);
+            if (mApplicationInfo == null) {
+                return null;
+            }
+            CharSequence appName = packageManager.getApplicationLabel(mApplicationInfo);
+            if (appName != null) {
+                packageItem.setName(appName.toString());
+            }
+            return packageItem;
+        } catch (PackageManager.NameNotFoundException e) {
+            e.printStackTrace();
+            return null;
+        }
+
     }
 }
