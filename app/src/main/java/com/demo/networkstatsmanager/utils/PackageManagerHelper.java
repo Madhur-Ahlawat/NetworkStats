@@ -19,7 +19,7 @@ public class PackageManagerHelper {
         return true;
     }
 
-    public static int getPackageUid(Context context, String packageName) {
+    public static int getPackageUID_byName(Context context, String packageName) {
         PackageManager packageManager = context.getPackageManager();
         int uid = -1;
         try {

@@ -99,7 +99,7 @@ public class StatsActivity extends AppCompatActivity {
     }
 
     private void fillData(String packageName) {
-        int uid = PackageManagerHelper.getPackageUid(this, packageName);
+        int uid = PackageManagerHelper.getPackageUID_byName(this, packageName);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             NetworkStatsManager networkStatsManager = (NetworkStatsManager) getApplicationContext().getSystemService(Context.NETWORK_STATS_SERVICE);
             NetworkStatsHelper networkStatsHelper = new NetworkStatsHelper(networkStatsManager, uid);
